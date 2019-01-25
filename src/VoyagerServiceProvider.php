@@ -53,18 +53,41 @@ class VoyagerServiceProvider extends ServiceProvider
      */
     public function register()
     {
-        $this->app->register(VoyagerEventServiceProvider::class);
-        $this->app->register(ImageServiceProvider::class);
-        $this->app->register(VoyagerDummyServiceProvider::class);
-        $this->app->register(VoyagerHooksServiceProvider::class);
-        $this->app->register(DoctrineSupportServiceProvider::class);
-
         $loader = AliasLoader::getInstance();
         $loader->alias('Voyager', VoyagerFacade::class);
 
         $this->app->singleton('voyager', function () {
             return new Voyager();
         });
+
+    }
+
+    /**
+     * Bootstrap the application services.
+     *
+     * @param \Illuminate\Routing\Router $router
+     */
+    public function boot(Router $router, Dispatcher $event)
+    {
+
+        if(
+            !( $this->app->runningInConsole() || starts_with($this->app->request->getRequestUri(), '/admin') )
+        ){
+            return;
+        }
+
+        $this->app->register(VoyagerEventServiceProvider::class);
+        $this->app->register(ImageServiceProvider::class);
+        $this->app->register(VoyagerDummyServiceProvider::class);
+        $this->app->register(VoyagerHooksServiceProvider::class);
+        $this->app->register(DoctrineSupportServiceProvider::class);
+
+        // $loader = AliasLoader::getInstance();
+        // $loader->alias('Voyager', VoyagerFacade::class);
+
+        // $this->app->singleton('voyager', function () {
+        //     return new Voyager();
+        // });
 
         $this->loadHelpers();
 
@@ -81,15 +104,6 @@ class VoyagerServiceProvider extends ServiceProvider
         if (!$this->app->runningInConsole() || config('app.env') == 'testing') {
             $this->registerAppCommands();
         }
-    }
-
-    /**
-     * Bootstrap the application services.
-     *
-     * @param \Illuminate\Routing\Router $router
-     */
-    public function boot(Router $router, Dispatcher $event)
-    {
         if (config('voyager.user.add_default_role_on_register')) {
             $app_user = config('voyager.user.namespace') ?: config('auth.providers.users.model');
             $app_user::created(function ($user) {
